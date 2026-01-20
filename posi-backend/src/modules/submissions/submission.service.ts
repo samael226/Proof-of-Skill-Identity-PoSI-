@@ -47,16 +47,18 @@ export const SubmissionService = {
   async updateSubmissionStatus(
     id: number,
     status: 'PENDING' | 'APPROVED' | 'REJECTED',
-    score: number
+    score: number,
+    feedback?: string
   ) {
     const result = await pool.query(
       `
       UPDATE submissions
-      SET status = $1, score = $2
-      WHERE id = $3
+      SET status = $1, score = $2 ,
+      feedback = $3
+      WHERE id = $4
       RETURNING *
       `,
-      [status, score, id]
+      [status, score, feedback ?? null, id]
     );
     return result.rows[0];
   },

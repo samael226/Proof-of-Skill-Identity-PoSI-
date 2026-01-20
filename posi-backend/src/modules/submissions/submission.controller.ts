@@ -25,7 +25,9 @@ create: async (req: Request, res: Response) => {
       submittedAnswer,
       0,              // score
       timeTaken,
-      'PENDING'
+      'PENDING',
+      
+
     );
 
     res.status(201).json(submission);
@@ -57,11 +59,11 @@ create: async (req: Request, res: Response) => {
 
   updateStatus: async (req: Request, res: Response) => {
     const id = parseInt(req.params.id as string);
-    const { status, score } = req.body;
+    const { status, score , feedback } = req.body;
     if (!['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
       return res.status(400).json({ message: 'Invalid status' });
     }
-    const updated = await SubmissionService.updateSubmissionStatus(id, status, score);
+    const updated = await SubmissionService.updateSubmissionStatus(id, status, score,feedback);
     res.json(updated);
   },
 
