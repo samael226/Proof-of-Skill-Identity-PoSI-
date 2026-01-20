@@ -3,7 +3,10 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { json } from 'express';
 import authRoutes from './modules/auth/auth.routes.js';
-
+import profileRoutes from './routes/profile.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import challengeRoutes from './routes/challenge.routes.js';
+import submissionRoutes from './modules/submissions/submission.routes.js'
 // Load environment variables
 dotenv.config();
 
@@ -22,6 +25,15 @@ app.get('/health', (_req: Request, res: Response) => {
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);
+
+
+
+// Protected routes
+app.use('/api/profile', profileRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/challenges', challengeRoutes);
+app.use('/api/submissions', submissionRoutes)
+
 
 // Error handling middleware
 const errorHandler: ErrorRequestHandler = (err: Error, _req: Request, res: Response, _next: NextFunction) => {

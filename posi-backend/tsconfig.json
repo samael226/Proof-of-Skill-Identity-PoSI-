@@ -18,12 +18,9 @@
     "baseUrl": ".",
     "paths": {
       "*": ["node_modules/*", "src/types/*"]
-    }
+    },
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"],
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  }
+  "exclude": ["node_modules", "dist"]
 }
