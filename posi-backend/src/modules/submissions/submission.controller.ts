@@ -81,6 +81,13 @@ create: async (req: Request, res: Response) => {
       updated.skill_id
     );
   }
+  if (status === "APPROVED") {
+  await UserSkillService.updateAfterApprovedSubmission(
+    updated.user_id,
+    updated.skill_id,
+    score
+  );
+}
 
   res.json(updated);
 },

@@ -59,5 +59,66 @@ export const UserSkillService = {
     );
 
     return result.rows;
-  }
+  },
+  calculateLevel(avgScore: number): "BEGINNER" | "INTERMEDIATE" | "EXPERT" {
+    if (avgScore >= 70) return "EXPERT";
+    if (avgScore >= 40) return "INTERMEDIATE";
+    return "BEGINNER";
+  },
+  async updateAfterApprovedSubmission(
+    userId: number,
+    skillId: number,
+    score: number
+  ) {
+    // 1️⃣ Insert or update
+    const result = await pool.query(
+      `
+      INSERT INTO user_skills (user_id, skill_id, total_score)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (user_id, skill_id)
+      DO UPDATE SET
+        total_score = user_skills.total_score + $3
+      RETURNING *
+      `,
+      [userId, skillId, score]
+    );
+
+    const totalScore = result.rows[0].total_score;
+
+    // 2️⃣ Count approved submissions
+    const countRes = await pool.query(
+      `
+      SELECT COUNT(*) 
+      FROM submissions
+      WHERE user_id = $1
+        AND skill_id = $2
+        AND status = 'APPROVED'
+      `,
+      [userId, skillId]
+    );
+
+    const count = Number(countRes.rows[0].count);
+    const avg = totalScore / count;
+    const level = UserSkillService.calculateLevel(avg);
+
+    // 3️⃣ Update derived fields
+    await pool.query(
+      `
+      UPDATE user_skills
+      SET average_score = $1, level = $2
+      WHERE user_id = $3 AND skill_id = $4
+      `,
+      [avg, level, userId, skillId]
+    );
+  },
+  calculateBadge(
+  avgScore: number,
+  level: "BEGINNER" | "INTERMEDIATE" | "EXPERT"
+): "BRONZE" | "SILVER" | "GOLD" | null {
+  if (avgScore >= 85 && level === "EXPERT") return "GOLD";
+  if (avgScore >= 70 && level !== "BEGINNER") return "SILVER";
+  if (avgScore >= 50) return "BRONZE";
+  return null;
+},
+
 };
