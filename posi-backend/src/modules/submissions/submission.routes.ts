@@ -1,6 +1,6 @@
 // src/modules/submissions/submission.routes.ts
 import { Router } from 'express';
-import { SubmissionController } from './submission.controller';
+import { SubmissionController } from './submission.controller.js';
 import { authenticateJWT, authorizeRoles } from '../auth/auth.middleware.js';
 
 const router = Router();

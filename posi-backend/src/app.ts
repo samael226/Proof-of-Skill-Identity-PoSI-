@@ -6,7 +6,10 @@ import authRoutes from './modules/auth/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import challengeRoutes from './routes/challenge.routes.js';
-import submissionRoutes from './modules/submissions/submission.routes.js'
+import submissionRoutes from './modules/submissions/submission.routes.js';
+import skillRoutes from './modules/skills/skill.routes.js';
+import userSkillRoutes from "./routes/userSkill.routes.js";
+
 // Load environment variables
 dotenv.config();
 
@@ -32,7 +35,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/challenges', challengeRoutes);
-app.use('/api/submissions', submissionRoutes)
+app.use('/api/submissions', submissionRoutes);
+app.use('/api/skills', skillRoutes);
+app.use("/api", userSkillRoutes);
 
 
 // Error handling middleware

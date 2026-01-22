@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
-import { SubmissionService } from './submission.service';
+import { SubmissionService } from './submission.service.js';
+import { UserSkillService } from "../../services/userSkill.service.js";
+
 
 export const SubmissionController = {
 create: async (req: Request, res: Response) => {
@@ -58,18 +60,36 @@ create: async (req: Request, res: Response) => {
   },
 
   updateStatus: async (req: Request, res: Response) => {
-    const id = parseInt(req.params.id as string);
-    const { status, score , feedback } = req.body;
-    if (!['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-    const updated = await SubmissionService.updateSubmissionStatus(id, status, score,feedback);
-    res.json(updated);
-  },
+  const id = Number(req.params.id);
+  const { status, score, feedback } = req.body;
+
+  if (!['PENDING', 'APPROVED', 'REJECTED'].includes(status)) {
+    return res.status(400).json({ message: 'Invalid status' });
+  }
+
+  const updated = await SubmissionService.updateSubmissionStatus(
+    id,
+    status,
+    score,
+    feedback
+  );
+
+  // 🔥 SKILL AGGREGATION (ONLY ON APPROVAL)
+  if (status === 'APPROVED') {
+    await UserSkillService.recomputeUserSkill(
+      updated.user_id,
+      updated.skill_id
+    );
+  }
+
+  res.json(updated);
+},
 
   delete: async (req: Request, res: Response) => {
     const id = parseInt(req.params.id as string);
     const deleted = await SubmissionService.deleteSubmission(id);
     res.json({ message: 'Submission deleted', submission: deleted });
   }
+
+  
 };
