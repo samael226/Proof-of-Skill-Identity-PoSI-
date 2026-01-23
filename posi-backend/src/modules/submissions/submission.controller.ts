@@ -82,10 +82,10 @@ create: async (req: Request, res: Response) => {
     );
   }
   if (status === "APPROVED") {
-  await UserSkillService.updateAfterApprovedSubmission(
+  await UserSkillService.recomputeUserSkill(
     updated.user_id,
     updated.skill_id,
-    score
+    
   );
 }
 

@@ -35,3 +35,8 @@ return res.status(403).json({ message: 'Forbidden: Insufficient role' });
 next();
 };
 }
+// 🔐 Auth guard
+export const requireAuth = authenticateJWT;
+
+// 👮 Admin-only guard
+export const requireAdmin = authorizeRoles("ADMIN");

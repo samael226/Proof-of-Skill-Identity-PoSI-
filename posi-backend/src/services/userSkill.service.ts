@@ -1,13 +1,29 @@
 import { pool } from "../config/db.js";
 
+type Level = "BEGINNER" | "INTERMEDIATE" | "EXPERT";
+type Badge = "BRONZE" | "SILVER" | "GOLD" | null;
+
 export const UserSkillService = {
+  calculateLevel(avg: number): Level {
+    if (avg >= 70) return "EXPERT";
+    if (avg >= 40) return "INTERMEDIATE";
+    return "BEGINNER";
+  },
+
+  calculateBadge(avg: number, level: Level): Badge {
+    if (avg >= 85 && level === "EXPERT") return "GOLD";
+    if (avg >= 70 && level !== "BEGINNER") return "SILVER";
+    if (avg >= 50) return "BRONZE";
+    return null;
+  },
+
   async recomputeUserSkill(userId: number, skillId: number) {
     const result = await pool.query(
       `
       SELECT
-        COUNT(*) as submissions_count,
-        COALESCE(SUM(score), 0) as total_score,
-        COALESCE(AVG(score), 0) as average_score
+        COUNT(*) AS submissions_count,
+        COALESCE(SUM(score), 0) AS total_score,
+        COALESCE(AVG(score), 0) AS average_score
       FROM submissions
       WHERE user_id = $1
         AND skill_id = $2
@@ -16,31 +32,49 @@ export const UserSkillService = {
       [userId, skillId]
     );
 
-    const { submissions_count, total_score, average_score } = result.rows[0];
+    const count = Number(result.rows[0].submissions_count);
+    const totalScore = Number(result.rows[0].total_score);
+    const avgScore = Number(result.rows[0].average_score);
 
-    const verified =
-      submissions_count >= 3 && Number(average_score) >= 70;
+    const level = this.calculateLevel(avgScore);
+    const badge = this.calculateBadge(avgScore, level);
+
+    const verified = count >= 3 && avgScore >= 70;
 
     await pool.query(
       `
-      INSERT INTO user_skills (user_id, skill_id, total_score, average_score, verified, verified_at)
-      VALUES ($1, $2, $3, $4, $5, CASE WHEN $5 THEN NOW() ELSE NULL END)
+      INSERT INTO user_skills (
+        user_id,
+        skill_id,
+        total_score,
+        average_score,
+        level,
+        badge,
+        verified,
+        verified_at
+      )
+      VALUES ($1,$2,$3,$4,$5,$6,$7, CASE WHEN $7 THEN NOW() ELSE NULL END)
       ON CONFLICT (user_id, skill_id)
       DO UPDATE SET
         total_score = EXCLUDED.total_score,
         average_score = EXCLUDED.average_score,
+        level = EXCLUDED.level,
+        badge = EXCLUDED.badge,
         verified = EXCLUDED.verified,
         verified_at = EXCLUDED.verified_at
       `,
       [
         userId,
         skillId,
-        total_score,
-        average_score,
-        verified,
+        totalScore,
+        avgScore,
+        level,
+        badge,
+        verified
       ]
     );
   },
+
   async getSkillsByUser(userId: number) {
     const result = await pool.query(
       `
@@ -49,6 +83,8 @@ export const UserSkillService = {
         s.name,
         us.total_score,
         us.average_score,
+        us.level,
+        us.badge,
         us.verified,
         us.verified_at
       FROM user_skills us
@@ -59,66 +95,5 @@ export const UserSkillService = {
     );
 
     return result.rows;
-  },
-  calculateLevel(avgScore: number): "BEGINNER" | "INTERMEDIATE" | "EXPERT" {
-    if (avgScore >= 70) return "EXPERT";
-    if (avgScore >= 40) return "INTERMEDIATE";
-    return "BEGINNER";
-  },
-  async updateAfterApprovedSubmission(
-    userId: number,
-    skillId: number,
-    score: number
-  ) {
-    // 1️⃣ Insert or update
-    const result = await pool.query(
-      `
-      INSERT INTO user_skills (user_id, skill_id, total_score)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (user_id, skill_id)
-      DO UPDATE SET
-        total_score = user_skills.total_score + $3
-      RETURNING *
-      `,
-      [userId, skillId, score]
-    );
-
-    const totalScore = result.rows[0].total_score;
-
-    // 2️⃣ Count approved submissions
-    const countRes = await pool.query(
-      `
-      SELECT COUNT(*) 
-      FROM submissions
-      WHERE user_id = $1
-        AND skill_id = $2
-        AND status = 'APPROVED'
-      `,
-      [userId, skillId]
-    );
-
-    const count = Number(countRes.rows[0].count);
-    const avg = totalScore / count;
-    const level = UserSkillService.calculateLevel(avg);
-
-    // 3️⃣ Update derived fields
-    await pool.query(
-      `
-      UPDATE user_skills
-      SET average_score = $1, level = $2
-      WHERE user_id = $3 AND skill_id = $4
-      `,
-      [avg, level, userId, skillId]
-    );
-  },
-  calculateBadge(
-  avgScore: number,
-  level: "BEGINNER" | "INTERMEDIATE" | "EXPERT"
-): "BRONZE" | "SILVER" | "GOLD" | null {
-  if (avgScore >= 85 && level === "EXPERT") return "GOLD";
-  if (avgScore >= 70 && level !== "BEGINNER") return "SILVER";
-  if (avgScore >= 50) return "BRONZE";
-  return null;
-},
-
+  }
 };

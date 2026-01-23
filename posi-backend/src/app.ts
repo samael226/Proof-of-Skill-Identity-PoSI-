@@ -9,6 +9,9 @@ import challengeRoutes from './routes/challenge.routes.js';
 import submissionRoutes from './modules/submissions/submission.routes.js';
 import skillRoutes from './modules/skills/skill.routes.js';
 import userSkillRoutes from "./routes/userSkill.routes.js";
+import verificationRoutes from "./modules/verification/verification.routes.js";
+import adminSkillRoutes from "./routes/adminSkill.routes.js";
+import publicVerificationRoutes from "./routes/publicVerification.routes.js";
 
 // Load environment variables
 dotenv.config();
@@ -38,7 +41,9 @@ app.use('/api/challenges', challengeRoutes);
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/skills', skillRoutes);
 app.use("/api", userSkillRoutes);
-
+app.use("/api", verificationRoutes);
+app.use("/api", adminSkillRoutes);
+app.use("/api", publicVerificationRoutes);
 
 // Error handling middleware
 const errorHandler: ErrorRequestHandler = (err: Error, _req: Request, res: Response, _next: NextFunction) => {

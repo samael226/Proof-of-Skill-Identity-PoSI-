@@ -69,5 +69,45 @@ export const SubmissionService = {
       [id]
     );
     return result.rows[0];
-  }
+  },
+ async getPendingSubmissions() {
+  const result = await pool.query(`
+    SELECT 
+      s.id,
+      s.submitted_answer,
+      s.time_taken_seconds,
+      s.status,
+      u.username,
+      c.title AS challenge_title,
+      sk.name AS skill_name
+    FROM submissions s
+    JOIN users u ON u.id = s.user_id
+    JOIN challenges c ON c.id = s.challenge_id
+    JOIN skills sk ON sk.id = s.skill_id
+    WHERE s.status = 'PENDING'
+    ORDER BY s.created_at ASC
+  `);
+
+  return result.rows;
+},
+
+async reviewSubmission(
+  submissionId: number,
+  status: "APPROVED" | "REJECTED",
+  score: number,
+  feedback: string
+) {
+  const result = await pool.query(
+    `
+    UPDATE submissions
+    SET status = $1, score = $2, feedback = $3
+    WHERE id = $4
+    RETURNING *
+    `,
+    [status, score, feedback, submissionId]
+  );
+
+  return result.rows[0];
+},
+
 };
